@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Word Game</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+
+body {
+
+font-family: 'Inter', sans-serif;
+
+background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+
+}
+
+.letter-btn {
+
+transition: transform 0.2s, background-color 0.2s;
+
+}
+
+.letter-btn:active {
+
+transform: scale(0.95);
+
+}
+
+.faded {
+
+opacity: 0.5;
+
+}
+
+.score-bar {
+
+transition: width 0.5s ease-in-out;
+
+}
+
+</style>
+
+</head>
+
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+<div class="w-full max-w-4xl bg-white rounded-2xl shadow-2xl p-6">
+
+<!-- Score Bar -->
+
+<div class="mb-6">
+
+<h2 class="text-2xl font-bold text-gray-800">Score: <span id="score">0</span>/<span id="maxScore">0</span></h2>
+
+<div class="w-full bg-gray-200 rounded-full h-4">
+
+<div id="scoreBar" class="score-bar bg-green-500 h-4 rounded-full" style="width: 0%"></div>
+
+</div>
+
+</div>
+
+<!-- Letters Display -->
+
+<div class="flex justify-center gap-2 mb-6">
+
+<div id="letters" class="flex gap-2 flex-wrap justify-center"></div>
+
+</div>
+
+<!-- Input and Buttons -->
+
+<div class="flex flex-col items-center mb-6">
+
+<input id="wordInput" type="text" class="w-full max-w-md p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="Enter a word" autofocus>
+
+<div id="mobileButtons" class="flex gap-2 mt-4 md:hidden">
+
+<button id="submitBtn" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Submit</button>
+
+<button id="backspaceBtn" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">Backspace</button>
+
+</div>
+
+<p id="feedback" class="mt-2 text-lg font-semibold"></p>
+
+</div>
+
+<!-- Rules -->
+
+<div class="mb-6">
+
+<h2 class="text-xl font-bold text-gray-800 flex items-center">
+
+Rules
+
+<button id="readRulesBtn" class="ml-2 text-blue-500 hover:text-blue-700">
+
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
+
+</svg>
+
+</button>
+
+</h2>
+
+<ul id="rules" class="list-disc pl-6 text-gray-600"></ul>
+
+</div>
+
+<!-- Word Lists -->
+
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+<div>
+
+<h3 class="text-lg font-semibold text-gray-800">2-Letter Words</h3>
+
+<ul id="words2" class="list-disc pl-6 text-gray-600"></ul>
+
+</div>
+
+<div>
+
+<h3 class="text-lg font-semibold text-gray-800">3-Letter Words</h3>
+
+<ul id="words3" class="list-disc pl-6 text-gray-600"></ul>
+
+</div>
+
+<div>
+
+<h3 class="text-lg font-semibold text-gray-800">4-Letter Words</h3>
+
+<ul id="words4" class="list-disc pl-6 text-gray-600"></ul>
+
+</div>
+
+<div>
+
+<h3 class="text-lg font-semibold text-gray-800">5+ Letter Words</h3>
+
+<ul id="words5" class="list-disc pl-6 text-gray-600"></ul>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+const letters = ['M', 'R', 'A', 'N', 'G', 'K', 'I']; // Available letters
+
+const validWords = ['MARKING', 'ARKING', 'ARMING', 'INGRAM', 'MAKING', 'MARGIN', 'RAKING', 'AGRIN', 'AKING', 'GAMIN', 'GARNI', 'GRAIN', 'INARM', 'KAING', 'KIANG', 'KRANG', 'MIKRA', 'MINAR', 'RAMIN', 'RANGI', 'AGIN', 'AIRN', 'AKIN', 'AMIN', 'AMIR', 'GAIN', 'GAIR', 'GARI', 'GINK', 'GIRN', 'GNAR', 'GRAM', 'GRAN', 'GRIM', 'GRIN', 'IKAN', 'KAIM', 'KAIN', 'KAMI', 'KANG', 'KARN', 'KINA', 'KING', 'KIRN', 'KNAG', 'KNAR', 'KRAI', 'MAGI', 'MAIK', 'MAIN', 'MAIR', 'MAKI', 'MANG', 'MANI', 'MARG', 'MARK', 'MINA', 'MING', 'MINK', 'MIRK', 'NAIK', 'NARK', 'NGAI', 'RAGI', 'RAIK', 'RAIN', 'RAKI', 'RAMI', 'RANG', 'RANI', 'RANK', 'RIMA', 'RING', 'RINK', 'AIM', 'AIN', 'AIR', 'AMI', 'ANI', 'ARK', 'ARM', 'GAK', 'GAM', 'GAN', 'GAR', 'GIN', 'ING', 'INK', 'IRK', 'KAI', 'KAM', 'KIN', 'KIR', 'MAG', 'MAK', 'MAN', 'MAR', 'MIG', 'MIR', 'MNA', 'NAG', 'NAM', 'NIM', 'RAG', 'RAI', 'RAM', 'RAN', 'RIA', 'RIG', 'RIM', 'RIN', 'AG', 'AI', 'AM', 'AN', 'AR', 'GI', 'IN', 'KA', 'KI', 'MA', 'MI', 'NA']; // Valid words list
+
+const rules = [
+
+"Use the 7 letters provided to form as many words as possible.",
+
+"Each letter in a valid word counts as one point.",
+
+"Letters cannot be repeated.",
+
+"Word cannot be repeated"
+
+]; // Game rules
+
+let foundWords = []; // Track words found by user
+
+let score = 0; // Current score
+
+const maxScore = validWords.reduce((sum, word) => sum + word.length, 0); // Calculate max score
+
+// Initialize sounds
+
+const validSound = new Audio('https://www.soundjay.com/buttons/beep-01a.mp3'); // Valid word sound
+
+const invalidSound = new Audio('https://www.soundjay.com/buttons/beep-02.mp3'); // Invalid word sound
+
+const repeatSound = new Audio('https://www.soundjay.com/buttons/beep-03.mp3'); // Repeated word sound
+
+// Cookie handling
+
+function setCookie(name, value, hours) {
+
+const date = new Date();
+
+date.setTime(date.getTime() + (hours * 60 * 60 * 1000));
+
+document.cookie = `${name}=${JSON.stringify(value)};expires=${date.toUTCString()};path=/`; // Set cookie with expiry
+
+}
+
+function getCookie(name) {
+
+const value = `; ${document.cookie}`;
+
+const parts = value.split(`; ${name}=`);
+
+if (parts.length === 2) return JSON.parse(parts.pop().split(';').shift()); // Parse cookie value
+
+return null;
+
+}
+
+// Load saved words from cookie
+
+const savedWords = getCookie('foundWords');
+
+if (savedWords) {
+
+foundWords = savedWords;
+
+updateWordLists();
+
+updateScore();
+
+}
+
+// Display letters
+
+const lettersDiv = document.getElementById('letters');
+
+letters.forEach(letter => {
+
+const btn = document.createElement('button');
+
+btn.textContent = letter;
+
+btn.className = 'letter-btn px-4 py-2 bg-blue-200 text-blue-800 rounded-lg hover:bg-blue-300';
+
+btn.onclick = () => {
+
+document.getElementById('wordInput').value += letter; // Add letter to input on click
+
+btn.classList.add('bg-blue-400'); // Highlight selected letter
+
+setTimeout(() => btn.classList.remove('bg-blue-400'), 200); // Remove highlight after animation
+
+};
+
+lettersDiv.appendChild(btn);
+
+});
+
+// Display rules
+
+const rulesList = document.getElementById('rules');
+
+rules.forEach(rule => {
+
+const li = document.createElement('li');
+
+li.textContent = rule;
+
+rulesList.appendChild(li); // Add rule to list
+
+});
+
+// Read rules aloud
+
+document.getElementById('readRulesBtn').onclick = () => {
+
+const utterance = new SpeechSynthesisUtterance(rules.join(' '));
+
+speechSynthesis.speak(utterance); // Speak rules
+
+};
+
+// Handle input
+
+const wordInput = document.getElementById('wordInput');
+
+wordInput.addEventListener('input', () => {
+
+const value = wordInput.value.toUpperCase();
+
+const lastChar = value.slice(-1);
+
+if (lastChar && !letters.includes(lastChar)) {
+
+wordInput.classList.add('faded'); // Fade input for invalid letter
+
+} else {
+
+wordInput.classList.remove('faded'); // Remove fade for valid letter
+
+}
+
+});
+
+// Handle submit
+
+function submitWord() {
+
+const word = wordInput.value.toUpperCase().trim();
+
+const feedback = document.getElementById('feedback');
+
+if (!word) return;
+
+// Validate word
+
+const isValid = validWords.includes(word);
+
+const isRepeated = foundWords.includes(word);
+
+if (isValid && !isRepeated) {
+
+feedback.textContent = 'Valid';
+
+feedback.className = 'mt-2 text-lg font-semibold text-green-500';
+
+foundWords.push(word);
+
+score += word.length;
+
+validSound.play(); // Play valid sound
+
+setCookie('foundWords', foundWords, 24); // Save to cookie
+
+updateWordLists();
+
+updateScore();
+
+} else if (isRepeated) {
+
+feedback.textContent = 'Word Already Exists';
+
+feedback.className = 'mt-2 text-lg font-semibold text-yellow-500';
+
+repeatSound.play(); // Play repeat sound
+
+} else {
+
+feedback.textContent = 'Invalid Word';
+
+feedback.className = 'mt-2 text-lg font-semibold text-red-500';
+
+invalidSound.play(); // Play invalid sound
+
+}
+
+wordInput.value = ''; // Clear input
+
+wordInput.classList.remove('faded');
+
+}
+
+// Desktop submit on Enter
+
+wordInput.addEventListener('keydown', (e) => {
+
+if (e.key === 'Enter') submitWord(); // Submit on Enter
+
+});
+
+// Mobile submit button
+
+document.getElementById('submitBtn').onclick = submitWord;
+
+// Mobile backspace button
+
+document.getElementById('backspaceBtn').onclick = () => {
+
+wordInput.value = wordInput.value.slice(0, -1); // Remove last character
+
+wordInput.classList.remove('faded');
+
+};
+
+// Update word lists
+
+function updateWordLists() {
+
+const lists = {
+
+2: document.getElementById('words2'),
+
+3: document.getElementById('words3'),
+
+4: document.getElementById('words4'),
+
+5: document.getElementById('words5')
+
+};
+
+Object.values(lists).forEach(list => list.innerHTML = ''); // Clear lists
+
+foundWords.forEach(word => {
+
+const length = word.length;
+
+const list = length <= 2 ? lists[2] : length === 3 ? lists[3] : length === 4 ? lists[4] : lists[5];
+
+const li = document.createElement('li');
+
+li.textContent = `${word} (${word.length} points)`;
+
+list.appendChild(li); // Add word to appropriate list
+
+});
+
+}
+
+// Update score and score bar
+
+function updateScore() {
+
+document.getElementById('score').textContent = score;
+
+document.getElementById('maxScore').textContent = maxScore;
+
+const percentage = (score / maxScore) * 100;
+
+document.getElementById('scoreBar').style.width = `${percentage}%`; // Update score bar width
+
+}
+
+// Initialize score display
+
+updateScore();
+
+</script>
+
+</body>
+
+</html>
